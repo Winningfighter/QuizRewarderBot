@@ -10,7 +10,7 @@ load_dotenv()
 
 last_reward = {}
 
-ALLOWED_GUILDS = [1477933480380862585,1463496445347758293]
+ALLOWED_GUILDS = os.getenv("ALLOWED_GUILDS")
 
 
 TOKEN = os.getenv("DISCORD_TOKEN")
