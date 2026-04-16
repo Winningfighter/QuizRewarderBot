@@ -12,6 +12,10 @@ last_reward = {}
 
 ALLOWED_GUILDS = os.getenv("ALLOWED_GUILDS")
 
+if ALLOWED_GUILDS:
+    ALLOWED_GUILDS = [int(g.strip()) for g in ALLOWED_GUILDS.split(",")]
+else:
+    ALLOWED_GUILDS = []
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 UNBELIEVABOAT_TOKEN = os.getenv("UNBELIEVABOAT_TOKEN")
@@ -126,6 +130,9 @@ async def on_raw_reaction_add(payload):
         return
     
     if payload.user_id != CROSSQUIZ_BOT_ID:
+        return
+    
+    if payload.guild_id is None:
         return
     
     guild_id = str(payload.guild_id)
