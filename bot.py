@@ -102,18 +102,18 @@ async def cooldown(interaction: discord.Interaction, amount: int):
 
 @tree.command(name="enabled", description="Enable/Disable the rewarding system")
 @app_commands.default_permissions(administrator=True)
-@app_commands.describe(isEnabled="Should the system be enabled? (True/False)")
-async def enabled(interaction: discord.Interaction, isEnabled: bool):
+@app_commands.describe(enabled="Should the system be enabled? (True/False)")
+async def enabled(interaction: discord.Interaction, enabled: bool):
     guild_id = str(interaction.guild.id)
 
     if guild_id not in config:
         await interaction.response.send_message("❌ First execute /setup", ephemeral=True)
         return
     
-    config[guild_id]["enabled"] = isEnabled
+    config[guild_id]["enabled"] = enabled
     save_config(config)
     
-    await interaction.response.send_message(f"Rewarding system is now {'**Enabled**' if isEnabled else '**Disabled**' }.", ephemeral=True)
+    await interaction.response.send_message(f"Rewarding system is now {'**Enabled**' if enabled else '**Disabled**' }.", ephemeral=True)
 
 
 @tree.command(name="showconfig", description="Show the bot configuration of this server")
