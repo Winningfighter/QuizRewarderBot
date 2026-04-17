@@ -33,7 +33,7 @@ tree = app_commands.CommandTree(client)
 @client.event
 async def on_ready():
     guild = discord.Object(id=GUILD_ID)
-    synced = await tree.sync(guild=guild)
+    synced = await tree.sync()
     print(f"Synced {len(synced)} commands to guild")
     print(f"Bot is online: {client.user}")
 
@@ -67,6 +67,7 @@ async def setup(interaction: discord.Interaction):
     await interaction.response.send_message(
         "Saved Setup!", ephemeral=True
     )
+    print
 
 @tree.command(name="reward", description="Set ammount of coins per win")
 @app_commands.default_permissions(administrator=True)
@@ -99,8 +100,23 @@ async def cooldown(interaction: discord.Interaction, amount: int):
     
     await interaction.response.send_message(f"Cooldown is now {amount} seconds", ephemeral=True)
 
+@tree.command(name="enabled", description="Enable/Disable the rewarding system")
+@app_commands.default_permissions(administrator=True)
+@app_commands.describe(isEnabled="Should the system be enabled? (True/False)")
+async def enabled(interaction: discord.Interaction, isEnabled: bool):
+    guild_id = str(interaction.guild.id)
 
-@tree.command(name="showconfig", description="Show the bot configuration of this server", guild=discord.Object(id=GUILD_ID))
+    if guild_id not in config:
+        await interaction.response.send_message("❌ First execute /setup", ephemeral=True)
+        return
+    
+    config[guild_id]["enabled"] = isEnabled
+    save_config(config)
+    
+    await interaction.response.send_message(f"Rewarding system is now {'**Enabled**' if isEnabled else '**Disabled**' }.", ephemeral=True)
+
+
+@tree.command(name="showconfig", description="Show the bot configuration of this server")
 @app_commands.default_permissions(administrator=True)
 async def showconfig(interaction: discord.Interaction):
     guild_id = str(interaction.guild.id)
