@@ -67,7 +67,9 @@ async def setup(interaction: discord.Interaction):
     await interaction.response.send_message(
         "Saved Setup!", ephemeral=True
     )
-    print
+
+    print(f"[Quiz-Rewarder] Server {interaction.guild.name} with ID {guild_id} has setup its bot.")
+
 
 @tree.command(name="reward", description="Set ammount of coins per win")
 @app_commands.default_permissions(administrator=True)
@@ -83,6 +85,8 @@ async def reward(interaction: discord.Interaction, amount: int):
     save_config(config)
     
     await interaction.response.send_message(f"Reward is now {amount} Coins", ephemeral=True)
+    print(f"[Quiz-Rewarder] Reward in {interaction.guild.name} is now on {amount} Coins.")
+    
 
 
 @tree.command(name="cooldown", description="Set cooldown between each win")
@@ -99,6 +103,8 @@ async def cooldown(interaction: discord.Interaction, amount: int):
     save_config(config)
     
     await interaction.response.send_message(f"Cooldown is now {amount} seconds", ephemeral=True)
+    print(f"[Quiz-Rewarder] Cooldown in {interaction.guild.name} is now on {amount} seconds.")
+
 
 @tree.command(name="enabled", description="Enable/Disable the rewarding system")
 @app_commands.default_permissions(administrator=True)
@@ -204,9 +210,9 @@ def add_coins(guild_id, user_id, amount):
 
     try:
         response = requests.patch(url, json=data, headers=headers)
-        print(response.status_code, response.text)
+        print(f"[Unbelievaboat API] Recieved status code {response.status_code} with message \"{response.text}\"")
     except Exception as e:
-        print("API Error:", e)
+        print("[Unbelievaboat API] API Error:", e)
     
 
 
