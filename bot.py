@@ -114,6 +114,8 @@ async def enabled(interaction: discord.Interaction, enabled: bool):
     save_config(config)
     
     await interaction.response.send_message(f"Rewarding system is now {'**Enabled**' if enabled else '**Disabled**' }.", ephemeral=True)
+    print(f"[Quiz-Rewarder] Rewarding system in {interaction.guild.name} is now {'**Enabled**' if enabled else '**Disabled**' }.")
+
 
 
 @tree.command(name="showconfig", description="Show the bot configuration of this server")
@@ -182,7 +184,7 @@ async def on_raw_reaction_add(payload):
     
     last_reward[winner.id] = now
 
-    print(f"[Coin-System] {winner} got {reward} coins in {guild_id}")
+    print(f"[Quiz-Rewarder] {winner} got {reward} coins in {guild_id}")
 
     add_coins(payload.guild_id, winner.id, reward)
 
