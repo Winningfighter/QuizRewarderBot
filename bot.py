@@ -233,7 +233,7 @@ async def build_embed(guild_id, page, interaction):
     emoji = get_currency_emoji(guild_id)
 
     embed = discord.Embed(
-        title="🏆 Leaderboard",
+        title="🏆 Bible Quiz Rewards Leaderboard",
         color=0x2b2d31
     )
 
@@ -249,7 +249,7 @@ async def build_embed(guild_id, page, interaction):
         except:
             name = f"User {user_id}"
 
-        text += f"{i}. {name} • {emoji} {coins}\n"
+        text += f"**{i}.** {name} • {emoji} {coins}\n"
 
     embed.description = text
 
