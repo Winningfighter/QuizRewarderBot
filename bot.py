@@ -3,8 +3,10 @@ import requests
 import json
 import os
 import time
+import mysql.connector
 from dotenv import load_dotenv
 from discord import app_commands
+
 
 load_dotenv()
 
@@ -19,8 +21,21 @@ else:
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 UNBELIEVABOAT_TOKEN = os.getenv("UNBELIEVABOAT_TOKEN")
+MYSQL_HOST = os.getenv("MYSQL_HOST")
+MYSQL_USER = os.getenv("MYSQL_USER")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
 GUILD_ID = 1477933480380862585
 CROSSQUIZ_BOT_ID = 1095313054390042666
+
+db = mysql.connector.connect(
+    host=MYSQL_HOST,
+    user=MYSQL_USER,
+    password=MYSQL_PASSWORD,
+    database=MYSQL_DATABASE
+)
+
+cursor = db.cursor(dictionary=True)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -29,6 +44,7 @@ intents.reactions = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
+emoji_cache = {}
 
 @client.event
 async def on_ready():
@@ -139,12 +155,26 @@ async def showconfig(interaction: discord.Interaction):
     f"Enabled: {config[guild_id]['enabled']}",
     ephemeral=True
 )
+    
+@tree.command(name="leaderboard")
+async def leaderboard(interaction: discord.Interaction):
+    view = LeaderboardView(interaction.guild.id)
+
+    embed, _ = await build_embed(interaction.guild.id, 0, interaction)
+
+    await interaction.response.send_message(embed=embed, view=view)
+
 
 print([cmd.name for cmd in tree.get_commands()])
+
+
 
 @client.event
 async def on_raw_reaction_add(payload):
     if str(payload.emoji) != "✅":
+        return
+    
+    if payload.guild_id is None:
         return
     
     if payload.guild_id not in ALLOWED_GUILDS:
@@ -156,9 +186,7 @@ async def on_raw_reaction_add(payload):
     if payload.user_id != CROSSQUIZ_BOT_ID:
         return
     
-    if payload.guild_id is None:
-        return
-    
+
     guild_id = str(payload.guild_id)
 
     if guild_id not in config:
@@ -193,8 +221,66 @@ async def on_raw_reaction_add(payload):
     print(f"[Quiz-Rewarder] {winner} got {reward} coins in {guild_id}")
 
     add_coins(payload.guild_id, winner.id, reward)
+    add_stats(payload.guild_id, winner.id, reward)
 
+async def build_embed(guild_id, page, interaction):
+    results, total = get_leaderboard(guild_id, page)
 
+    total_pages = max(1, (total + 9) // 10)
+    emoji = get_currency_emoji(guild_id)
+
+    embed = discord.Embed(
+        title="🏆 Leaderboard",
+        color=0x2b2d31
+    )
+
+    text = ""
+
+    for i, row in enumerate(results, start=1 + page * 10):
+        user_id = row["user_id"]
+        coins = row["coins"]
+
+        try:
+            user = await interaction.client.fetch_user(user_id)
+            name = user.name
+        except:
+            name = f"User {user_id}"
+
+        text += f"**{i}. {name}** • {emoji} {coins}\n"
+
+    embed.description = text
+
+    rank = get_user_rank(guild_id, interaction.user.id)
+
+    embed.set_footer(
+        text=f"Page {page+1}/{total_pages} • Your leaderboard rank: {rank}"
+    )
+
+    return embed, total_pages
+
+class LeaderboardView(discord.ui.View):
+    def __init__(self, guild_id):
+        super().__init__(timeout=60)
+        self.guild_id = guild_id
+        self.page = 0
+
+    async def update(self, interaction):
+        embed, total_pages = await build_embed(self.guild_id, self.page, interaction)
+
+        self.previous.disabled = self.page == 0
+        self.next.disabled = self.page >= total_pages -1
+
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Previous Page", style=discord.ButtonStyle.grey)
+    async def previous(self, interaction: discord.Interaction, button):
+        self.page -= 1
+        await self.update(interaction)
+
+    @discord.ui.button(label="Next Page", style=discord.ButtonStyle.blurple)
+    async def next(self, interaction: discord.Interaction, button):
+        self.page += 1
+        await self.update(interaction)
 
 def add_coins(guild_id, user_id, amount):
     url = f"https://unbelievaboat.com/api/v1/guilds/{guild_id}/users/{user_id}"
@@ -213,7 +299,70 @@ def add_coins(guild_id, user_id, amount):
         print(f"[Unbelievaboat API] Recieved status code {response.status_code} with message \"{response.text}\"")
     except Exception as e:
         print("[Unbelievaboat API] API Error:", e)
+
+
+def add_stats(guild_id, user_id, amount):
+    now = int(time.time())
+
+    cursor.execute("""
+    INSERT INTO stats (guild_id, user_id, coins, last_update)
+    VALUES (%s, %s, %s, %s)
+    ON DUPLICATE KEY UPDATE
+        coins = coins + VALUES(coins),
+        last_update = VALUES(last_update)
+    """, (guild_id, user_id, amount, now))
+
+    db.commit()
+
+def get_leaderboard(guild_id, page):
+    limit = 10
+    offset = page * limit
+
+    cursor.execute("""
+    SELECT user_id, coins
+    FROM stats
+    WHERE guild_id = %s
+    ORDER BY coins DESC
+    LIMIT %s OFFSET %s
+    """, (guild_id, limit, offset))
+
+    results = cursor.fetchall()
+
+    cursor.execute("""
+    SELECT COUNT(*) as total FROM stats WHERE guild_id = %s
+    """, (guild_id,))
+
+    total = cursor.fetchone()["total"]
+
+    return results, total
+
+def get_user_rank(guild_id, user_id):
+    cursor.execute("""
+    SELECT COUNT(*) + 1 as rank
+    FROM stats
+    WHERE guild_id = %s AND coins > (
+        SELECT coins FROM stats WHERE guild_id = %s AND user_id = %s    
+    )
+    """, (guild_id, guild_id, user_id))
+
+    return cursor.fetchone()["rank"]
+
+def get_currency_emoji(guild_id):
+    if guild_id in emoji_cache:
+        return emoji_cache[guild_id]
     
+    url = f"https://unbelievaboat.com/api/v1/guilds/{guild_id}"
+    headers = {"Authorization": UNBELIEVABOAT_TOKEN}
+
+    try:
+        res = requests.get(url, headers=headers)
+        data = res.json()
+        emoji = data["currency"]["emoji"]
+    except:
+        emoji = "🪙"
+
+    emoji_cache[guild_id] = emoji
+    return emoji
 
 
 client.run(TOKEN)
