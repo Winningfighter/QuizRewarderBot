@@ -233,7 +233,7 @@ async def build_embed(guild_id, page, interaction):
     emoji = get_currency_emoji(guild_id)
 
     embed = discord.Embed(
-        title="🏆 Bible Quiz Rewards Leaderboard",
+        title="🏆 Bible Quiz Rewards All-Time Leaderboard",
         color=0x03a8f4
     )
 
