@@ -25,7 +25,7 @@ MYSQL_HOST = os.getenv("MYSQL_HOST")
 MYSQL_USER = os.getenv("MYSQL_USER")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
-MYSQL_PORT = os.getenv("MYSQL_PORT")
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", 3306))
 GUILD_ID = 1477933480380862585
 CROSSQUIZ_BOT_ID = 1095313054390042666
 
@@ -160,9 +160,10 @@ async def showconfig(interaction: discord.Interaction):
     
 @tree.command(name="leaderboard")
 async def leaderboard(interaction: discord.Interaction):
-    view = LeaderboardView(interaction.guild.id)
+    embed, total_pages = await build_embed(interaction.guild.id, 0, interaction)
 
-    embed, _ = await build_embed(interaction.guild.id, 0, interaction)
+
+    view = LeaderboardView(interaction.guild.id, total_pages)
 
     await interaction.response.send_message(embed=embed, view=view)
 
@@ -261,13 +262,18 @@ async def build_embed(guild_id, page, interaction):
     return embed, total_pages
 
 class LeaderboardView(discord.ui.View):
-    def __init__(self, guild_id):
+    def __init__(self, guild_id, total_pages):
         super().__init__(timeout=60)
         self.guild_id = guild_id
         self.page = 0
+        self.total_pages = total_pages
+
+        self.previous.disabled = True
+        self.next.disabled = total_pages <= 1
 
     async def update(self, interaction):
         embed, total_pages = await build_embed(self.guild_id, self.page, interaction)
+        self.total_pages = total_pages
 
         self.previous.disabled = self.page == 0
         self.next.disabled = self.page >= total_pages -1
