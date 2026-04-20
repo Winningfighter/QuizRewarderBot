@@ -247,9 +247,9 @@ async def build_embed(guild_id, page, interaction):
             user = await interaction.client.fetch_user(user_id)
             name = user.name
         except:
-            name = f"User {user_id}{user_id}{user_id}{user_id}"
+            name = f"User {user_id}"
 
-        text += f"**{i}. {name}** • {emoji} {coins}\n"
+        text += f"{i}. {name} • {emoji} {coins}\n"
 
     embed.description = text
 
