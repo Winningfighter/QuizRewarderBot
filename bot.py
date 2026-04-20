@@ -234,7 +234,7 @@ async def build_embed(guild_id, page, interaction):
 
     embed = discord.Embed(
         title="🏆 Bible Quiz Rewards Leaderboard",
-        color=0x2b2d31
+        color=0x03a8f4
     )
 
     text = ""
