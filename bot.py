@@ -25,12 +25,14 @@ MYSQL_HOST = os.getenv("MYSQL_HOST")
 MYSQL_USER = os.getenv("MYSQL_USER")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
+MYSQL_PORT = os.getenv("MYSQL_PORT")
 GUILD_ID = 1477933480380862585
 CROSSQUIZ_BOT_ID = 1095313054390042666
 
 db = mysql.connector.connect(
     host=MYSQL_HOST,
     user=MYSQL_USER,
+    port=MYSQL_PORT,
     password=MYSQL_PASSWORD,
     database=MYSQL_DATABASE
 )
