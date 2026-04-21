@@ -369,7 +369,7 @@ def get_currency_emoji(guild_id):
     try:
         res = requests.get(url, headers=headers)
         data = res.json()
-        emoji = data["currency"]["emoji"]
+        emoji = data["symbol"]
     except:
         emoji = "🪙"
 
