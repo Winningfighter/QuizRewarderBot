@@ -312,6 +312,9 @@ def add_coins(guild_id, user_id, amount):
 def add_stats(guild_id, user_id, amount):
     now = int(time.time())
 
+    db = get_db()
+    cursor = db.cursor()
+
     cursor.execute("""
     INSERT INTO stats (guild_id, user_id, coins, last_update)
     VALUES (%s, %s, %s, %s)
@@ -321,6 +324,7 @@ def add_stats(guild_id, user_id, amount):
     """, (guild_id, user_id, amount, now))
 
     db.commit()
+    cursor.close()
 
 def get_leaderboard(guild_id, page):
     limit = 10
@@ -371,6 +375,20 @@ def get_currency_emoji(guild_id):
 
     emoji_cache[guild_id] = emoji
     return emoji
+
+def get_db():
+    global db
+    try:
+        db.ping(reconnect=True, attempts=3, delay=2)
+    except:
+        db = mysql.connector.connect(
+            host=MYSQL_HOST,
+            user=MYSQL_USER,
+            port=MYSQL_PORT,
+            password=MYSQL_PASSWORD,
+            database=MYSQL_DATABASE
+        )
+    return db
 
 
 client.run(TOKEN)
