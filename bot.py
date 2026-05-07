@@ -167,6 +167,77 @@ async def leaderboard(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed, view=view)
 
+@tree.command(name="addlistrole")
+@app_commands.default_permissions(administrator=True)
+@app_commands.describe(
+    role="Role",
+    description="Description text",
+    order="Display order"
+)
+async def addlistrole(interaction, role: discord.Role, description: str, order: int = 1):
+
+    db = get_db()
+    cursor = db.cursor()
+
+    cursor.execute("""
+    INSERT INTO staff_roles (guild_id, role_id, description, display_order)
+    VALUES (%s,%s,%s,%s)
+    ON DUPLICATE KEY UPDATE
+    description=%s,
+    display_order=%s
+    """, (
+        interaction.guild.id,
+        role.id,
+        description,
+        order,
+        description,
+        order
+    ))
+
+    db.commit()
+
+    await interaction.response.send_message(
+        f"✅ {role.mention} added to staff list.",
+        ephemeral=True
+    )
+
+@tree.command(name="showstafflist")
+@app_commands.default_permissions(administrator=True)
+async def showstafflist(interaction):
+
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute("""
+    SELECT * FROM staff_roles
+    WHERE guild_id=%s
+    ORDER BY display_order ASC
+    """, (interaction.guild.id,))
+
+    rows = cursor.fetchall()
+
+    text = "# STAFF TEAM\n\n"
+
+    for row in rows:
+        role = interaction.guild.get_role(row["role_id"])
+        if not role:
+            continue
+
+        members = [m for m in role.members if not m.bot]
+
+        text += f"{role.mention}"
+
+        if len(members) == 0:
+            text += " - **Currently N/O**\n\n"
+        else:
+            text += "\n\n"
+            for member in members:
+                text += f"{member.mention}\n"
+            text += "\n"
+        text += f"> {row['description']}\n\n"
+    text += "-# (N/O -> No one)"
+
+    await interaction.response.send_message(text)
 
 print([cmd.name for cmd in tree.get_commands()])
 
